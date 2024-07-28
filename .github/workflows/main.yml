@@ -35,9 +35,9 @@ jobs:
         run: |
           ENV_FOLDER="mediamasses-$(echo $GITHUB_REF | sed 's/refs\/heads\///')"
           if [[ $GITHUB_REF == 'refs/heads/prod' ]]; then
-            DOCKER_COMPOSE_FILE=docker-compose-production.yml
+            DOCKER_COMPOSE_FILE=docker-compose-prod.yml
           else
-            DOCKER_COMPOSE_FILE=docker-compose-development.yml
+            DOCKER_COMPOSE_FILE=docker-compose-dev.yml
           fi
           sshpass -p $SERVER_PASSWORD ssh -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP << EOF
             cd /var/www/$ENV_FOLDER
@@ -53,9 +53,9 @@ jobs:
         run: |
           ENV_FOLDER="mediamasses-$(echo $GITHUB_REF | sed 's/refs\/heads\///')"
           if [[ $GITHUB_REF == 'refs/heads/prod' ]]; then
-            DOCKER_COMPOSE_FILE=docker-compose-production.yml
+            DOCKER_COMPOSE_FILE=docker-compose-prod.yml
           else
-            DOCKER_COMPOSE_FILE=docker-compose-development.yml
+            DOCKER_COMPOSE_FILE=docker-compose-dev.yml
           fi
           sshpass -p $SERVER_PASSWORD ssh -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP << EOF
             cd /var/www/$ENV_FOLDER
