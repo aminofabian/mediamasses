@@ -8,56 +8,123 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  username  String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  orders    Order[]
-  balance   Float    @default(0)
+  id            Int       @id @default(autoincrement())
+  name          String?
+  email         String    @unique
+  username      String?   @unique
+  image         String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  orders        Order[]
+  balance       Float     @default(0)
+  accounts      Account[]
+  sessions      Session[]
+  freeTrials    FreeTrial[]
+  isAdmin Boolean @default(false)
+
+
+
+  @@map("users")
+}
+model Account {
+  id                String  @id @default(cuid())
+  userId            Int     @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       Int      @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
 }
 
 model Service {
-  id              Int         @id @default(autoincrement())
-  name            String
-  socialAccount   String
-  description     String
-  lowPrice        Float
-  mediumPrice     Float
-  highPrice       Float
-  imageUrl        String
-  minQuantity     Int
-  maxQuantity     Int
-  deliveryTime    Int
-  serviceType     ServiceType
-  isAvailable     Boolean     @default(true)
+  id                Int         @id @default(autoincrement())
+  name              String
+  socialAccount     String
+  description       String
+  lowPrice          Float
+  mediumPrice       Float
+  highPrice         Float
+  imageUrl          String
+  minQuantity       Int
+  maxQuantity       Int
+  deliveryTime      Int
+  serviceType       ServiceType
+  isAvailable       Boolean     @default(true)
   unitOfMeasurement String
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  orderItems      OrderItem[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  orderItems        OrderItem[]
+
+  @@map("services")
 }
 
 model Order {
-  id         Int         @id @default(autoincrement())
-  userId     Int
-  user       User        @relation(fields: [userId], references: [id])
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  total      Float
-  status     OrderStatus @default(PENDING)
-  orderItems OrderItem[]
+  id            Int          @id @default(autoincrement())
+  userId        Int?
+  user          User?         @relation(fields: [userId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  total         Float
+  status        OrderStatus  @default(PENDING)
+  orderItems    OrderItem[]
+  paymentMethod PaymentMethod
+  currencyCode  String       @default("KES")
+
+  @@map("orders")
 }
 
 model OrderItem {
-  id        Int     @id @default(autoincrement())
-  orderId   Int
-  order     Order   @relation(fields: [orderId], references: [id])
-  serviceId Int
-  service   Service @relation(fields: [serviceId], references: [id])
-  quantity  Int
-  price     Float
-  targetUrl String
+  id             Int       @id @default(autoincrement())
+  orderId        Int
+  order          Order     @relation(fields: [orderId], references: [id])
+  serviceId      Int
+  service        Service   @relation(fields: [serviceId], references: [id])
+  quantity       Int
+  price          Float
+  priceType      PriceType
+  targetUrl      String
+  paymentStatus  String    @default("not paid")  // New field
+
+  @@map("order_items")
+}
+
+enum PaymentMethod {
+  MPESA
+  PAYPAL
+}
+
+enum PriceType {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
 }
 
 enum ServiceType {
@@ -66,7 +133,10 @@ enum ServiceType {
   YOUTUBE_SUBSCRIBERS
   FACEBOOK_LIKES
   FACEBOOK_PAGE_LIKES
+  FACEBOOK_FOLLOWERS
+  FACEBOOK_PAGE_FOLLOWERS
   INSTAGRAM_FOLLOWERS
+  INSTAGRAM_VIDEO_VIEWS
   TWITTER_FOLLOWERS
   TWITTER_LIKES
   TWITTER_RETWEETS
@@ -85,9 +155,25 @@ enum ServiceType {
   OTHER
 }
 
-enum OrderStatus {
+model FreeTrial {
+  id            Int             @id @default(autoincrement())
+  userId        Int?
+  user          User?           @relation(fields: [userId], references: [id])
+  serviceType   ServiceType
+  link          String
+  currentCount  Int
+  requestedAt   DateTime        @default(now())
+  status        FreeTrialStatus @default(PENDING)
+  completedAt   DateTime?
+  notes         String?
+
+  @@map("free_trials")
+}
+
+enum FreeTrialStatus {
   PENDING
   PROCESSING
   COMPLETED
-  CANCELLED
+  REJECTED
 }
+

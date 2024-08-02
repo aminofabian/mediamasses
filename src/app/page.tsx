@@ -1,3 +1,4 @@
+import { Header } from "@/components/Header";
 import ServiceCard from "@/components/ServiceCard";
 import { prisma } from "@/lib/db/prisma";
 
@@ -6,7 +7,7 @@ export default async function Home() {
   
   try {
     services = await prisma.service.findMany({
-      orderBy: { id: "desc" },
+      orderBy: { id: "asc" },
       select: {
         id: true,
         name: true,
@@ -30,10 +31,12 @@ export default async function Home() {
   
   return (
     <div className="container mx-auto p-4">
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="container mx-auto my-5 relative border mb-5 rounded-xl z-50">
+    </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 my-10">
     {services.length > 0 ? (
       services.map((service) => (
-        <div key={service.id} className="flex">
+        <div key={service.id} className="flex my-5 rounded-lg">
         <ServiceCard service={service} />
         </div>
       ))

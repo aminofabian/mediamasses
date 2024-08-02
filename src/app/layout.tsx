@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import {Jost}  from "next/font/google";
 import "./globals.css";
+import  SessionProvider from "../components/SessionProvider";
+import { CartProvider } from "@/lib/CardContext";
+import { Header } from "@/components/Header";
 
 const inter = Jost({ subsets: ["latin"] });
 
@@ -16,9 +19,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+    <body className={inter.className}>
+    <CartProvider>
+    <SessionProvider>
     <main className="p-4 max-w-7xl m-auto min-w-[300px] ">
-    <body className={inter.className}>{children}</body>
+    <Header />
+    {children}
+    
     </main>
+    </SessionProvider>
+    </CartProvider>
+    
+    </body>
     </html>
   );
 }

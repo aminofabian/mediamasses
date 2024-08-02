@@ -1,14 +1,18 @@
 import React from 'react';
 import { addProduct } from '../(actions)/addProducts';
-export const metadata = {
-  title: "Add Service - Media Masses",
-}
+
+import { isAdmin } from "../utils/auth";
+import withAdminAuth from '@/components/withAdminAuth';
+import { GetServerSideProps } from 'next';
+
+
+
 
 function AddService() {
   const serviceTypes = [
     'YOUTUBE_VIEWS', 'YOUTUBE_LIKES', 'YOUTUBE_SUBSCRIBERS',
-    'FACEBOOK_LIKES', 'FACEBOOK_PAGE_LIKES',
-    'INSTAGRAM_FOLLOWERS',
+    'FACEBOOK_LIKES', 'FACEBOOK_PAGE_LIKES', 'FACEBOOK_PAGE_FOLLOWERS',
+    'INSTAGRAM_FOLLOWERS', 'INSTAGRAM_POST_LIKES', "INSTAGRAM_VIDEO_VIEWS",
     'TWITTER_FOLLOWERS', 'TWITTER_LIKES', 'TWITTER_RETWEETS',
     'TIKTOK_FOLLOWERS', 'TIKTOK_LIKES', 'TIKTOK_VIEWS',
     'LINKEDIN_CONNECTIONS', 'LINKEDIN_POST_ENGAGEMENTS',
@@ -19,6 +23,7 @@ function AddService() {
   ];
   
   return (
+    
     <div className="container mx-auto px-4 py-12">
     <h1 className="text-4xl font-extrabold text-center mb-12 relative item">
     Add Service
@@ -66,9 +71,11 @@ function AddService() {
     </div>
     
     <div>
-    <label htmlFor="imageUrl" className="block mb-2 font-semibold">Social Media Image URL</label>
-    <input required id="imageUrl" name="imageUrl" placeholder="Social Media Image URL" type="url" className="input input-bordered w-full" />
+    <label htmlFor="image" className="block mb-2 font-semibold">Social Media Image</label>
+    <input required id="image" name="image" type="file" accept="image/*" className="file-input file-input-bordered w-full" />
     </div>
+    
+    
     
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
