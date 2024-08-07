@@ -4,6 +4,7 @@ import "./globals.css";
 import  SessionProvider from "../components/SessionProvider";
 import { CartProvider } from "@/lib/CardContext";
 import { Header } from "@/components/Header";
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Jost({ subsets: ["latin"] });
 
@@ -25,7 +26,8 @@ export default function RootLayout({
     <main className="p-4 max-w-7xl m-auto min-w-[300px] ">
     <Header />
     {children}
-    
+            <Toaster />
+
     </main>
     </SessionProvider>
     </CartProvider>

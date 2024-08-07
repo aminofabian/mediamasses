@@ -3,6 +3,7 @@ import ServiceCard from "@/components/ServiceCard";
 import { prisma } from "@/lib/db/prisma";
 
 export default async function Home() {
+  //@ts-ignore
   let services = [];
   
   try {
@@ -35,13 +36,14 @@ export default async function Home() {
     </div>
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 my-10">
     {services.length > 0 ? (
+      //@ts-ignore
       services.map((service) => (
         <div key={service.id} className="flex my-5 rounded-lg">
         <ServiceCard service={service} />
         </div>
       ))
     ) : (
-      <p>No services available</p>
+      <p>No services available...</p>
     )}
     </div>
     </div>

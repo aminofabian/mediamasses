@@ -55,7 +55,7 @@ const FreeTrialCard: React.FC = () => {
   return (
     <div className="overflow-x-auto">
     <table className="min-w-full divide-y-2 divide-gray-200 bg-white text-sm">
-    <thead className="ltr:text-left rtl:text-right">
+    <thead className="ltr:text-left rtl:text-right uppercase">
     <tr>
     <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">Service Type</th>
     <th className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">Link</th>
@@ -65,11 +65,13 @@ const FreeTrialCard: React.FC = () => {
     <th className="px-4 py-2">Status</th>
     </tr>
     </thead>
-    <tbody className="divide-y divide-gray-200">
+    <tbody className="divide-y divide-gray-200 uppercase text-xs">
     {freeTrials.map((trial) => (
       <tr key={trial.id}>
-      <td className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">{trial.serviceType}</td>
-      <td className="whitespace-nowrap px-4 py-2 text-gray-700">{trial.link}</td>
+      <td className="whitespace-nowrap px-4 py-2 font-medium text-gray-900">{trial.serviceType.replace(/_/g, ' ')}</td>
+      <td className="whitespace-nowrap px-4 py-2 text-indigo-600 hover:underline text-xs">
+      <a href={trial.link} target="_blank" rel="noopener noreferrer">{trial.link}</a>
+      </td>
       <td className="whitespace-nowrap px-4 py-2 text-gray-700">{trial.currentCount}</td>
       <td className="whitespace-nowrap px-4 py-2 text-gray-700">{trial.currentCount}</td>
       <td className="whitespace-nowrap px-4 py-2 text-gray-700">{getElapsedTime(trial.requestedAt)} ago</td>

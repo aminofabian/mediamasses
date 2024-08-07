@@ -1,4 +1,4 @@
-import { Prisma, PaymentMethod, OrderStatus } from "@prisma/client";
+import { Prisma, PaymentMethod, OrderStatus, PriceType } from "@prisma/client";
 import { cookies } from "next/dist/client/components/headers";
 import { prisma } from "./prisma";
 
@@ -48,18 +48,22 @@ export async function getOrder(): Promise<ShoppingOrder | null> {
   };
 }
 
-export async function createOrder(): Promise<ShoppingOrder> {
+export async function createOrder(phoneNumber: string = ""): Promise<ShoppingOrder> {
   const newOrder = await prisma.order.create({
     data: {
       total: 0,
       status: OrderStatus.PENDING,
       paymentMethod: PaymentMethod.MPESA,
       currencyCode: 'KES',
+      phoneNumber: phoneNumber,
+      paymentInitiated: false,
+      orderItems: {
+        create: [],
+      },
     },
     include: { orderItems: { include: { service: true } } },
   });
 
-  // Note: Consider encryption + secure settings in a production app
   cookies().set("localOrderId", newOrder.id.toString());
 
   return {

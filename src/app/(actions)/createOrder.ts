@@ -1,10 +1,10 @@
-'use server'
+ 'use server'
 
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db/prisma'
 import { PaymentMethod, PriceType, OrderStatus } from '@prisma/client'
 import { getServerSession } from "next-auth/next"
-import { authOptions } from '../api/auth/[...nextauth]/route'
+import { authOptions } from '@/app/api/auth/[...nextauth]/options'
 
 export async function createOrder(formData: FormData) {
   const session = await getServerSession(authOptions)
@@ -16,6 +16,8 @@ export async function createOrder(formData: FormData) {
   const targetUrl = formData.get('targetUrl') as string
   const paymentMethod = formData.get('paymentMethod') as PaymentMethod
   const email = session?.user?.email
+  const phoneNumber = formData.get('phoneNumber') as string
+
 
   try {
     // Fetch the service to ensure it exists
@@ -41,6 +43,7 @@ export async function createOrder(formData: FormData) {
         paymentMethod,
         currencyCode: 'KES',
         status: OrderStatus.PENDING,
+        phoneNumber, // Add this line
         orderItems: {
           create: {
             serviceId,
@@ -54,10 +57,12 @@ export async function createOrder(formData: FormData) {
     })
 
     console.log('Order created:', order)
-    revalidatePath('/') // Adjust this path as needed
+    revalidatePath('/')
     return { success: true, orderId: order.id }
   } catch (error) {
     console.error('Failed to create order:', error)
+    // @ts-ignore
+// eslint-disable-next-line
     if (error.code === 'P2003') {
       return { success: false, error: 'Invalid user or service ID. Please try again.' }
     }

@@ -3,14 +3,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { PriceType } from '@prisma/client';
 
-interface CartItem {
+
+export type CartItem = {
   id: string;
-  name: string;
   price: number;
   quantity: number;
-  priceType: PriceType;
-  targetUrl: string;
-}
+  currency: string;
+  name: string;
+  priceType: string;
+  targetUrl?: string;
+  paymentMethod?: string;
+  
+};
 
 interface CartContextType {
   cartItems: CartItem[];
@@ -65,7 +69,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useCart() {
+export function useCart(): CartContextType {
   const context = useContext(CartContext);
   if (context === undefined) {
     throw new Error('useCart must be used within a CartProvider');

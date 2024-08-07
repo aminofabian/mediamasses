@@ -11,6 +11,7 @@ export async function incrementServiceQuantity(
   targetUrl: string
 ) {
   const order = (await getOrder() ?? await createOrder());
+
   const articleInCart = order.orderItems.find(
     orderItem => orderItem.serviceId === serviceId && orderItem.priceType === priceType
   );

@@ -5,6 +5,7 @@ import React, { useState, useMemo } from 'react';
 import { PriceType, Service, PaymentMethod } from '@prisma/client';
 import { useCart } from '@/lib/CardContext';
 import { useRouter } from 'next/navigation';
+import { createOrder } from '@/app/(actions)/createOrder';
 
 interface ServicePageClientProps {
   service: Service;
@@ -12,12 +13,13 @@ interface ServicePageClientProps {
 
 const USD_TO_KES_RATE = 130;
 
-export default function ServicePageClient({ service }: ServicePageClientProps) {
+export default function SinglePageClient({ service }: ServicePageClientProps) {
   const [selectedPrice, setSelectedPrice] = useState<PriceType>('MEDIUM');
   const [quantity, setQuantity] = useState(service.minQuantity);
   const [targetUrl, setTargetUrl] = useState('');
   const [currency, setCurrency] = useState<'KES' | 'USD'>('KES');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('MPESA');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const { addToCart } = useCart();
   const router = useRouter();
   
@@ -51,15 +53,74 @@ export default function ServicePageClient({ service }: ServicePageClientProps) {
       priceType: selectedPrice,
       targetUrl,
       currency,
-      paymentMethod,
     });
   };
   
-  const handleBuyNow = () => {
-    handleAddToCart();
-    router.push('/checkout');
+  const handleBuyNow = async () => {
+    // Create FormData object
+    const formData = new FormData();
+    formData.append('serviceId', service.id.toString());
+    formData.append('priceType', selectedPrice);
+    formData.append('price', totalPrice.toString());
+    formData.append('quantity', quantity.toString());
+    formData.append('targetUrl', targetUrl);
+    formData.append('paymentMethod', paymentMethod);
+    formData.append('phoneNumber', phoneNumber);
+    
+    // Create order
+    const orderResult = await createOrder(formData);
+    
+    if (orderResult.success) {
+      // Order created successfully, now initiate STK push
+      const response = await fetch('/api/initiate-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          serviceId: service.id,
+          priceType: selectedPrice,
+          quantity,
+          targetUrl,
+          amount: totalPrice,
+          phoneNumber,
+          orderId: orderResult.orderId,
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Payment initiated successfully
+        console.log('Payment initiated:', result);
+        // You can redirect the user to a confirmation page or show a success message
+        router.push('/payment-confirmation');
+      } else {
+        // Handle payment initiation error
+        console.error('Payment initiation failed:', result.error);
+        // Show an error message to the user
+        alert('Payment initiation failed. Please try again.');
+      }
+    } else {
+      // Handle order creation error
+      console.error('Order creation failed:', orderResult.error);
+      // Show an error message to the user
+      alert('Order creation failed. Please try again.');
+    }
   };
   
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    
+    // Use type assertion to access the submitter property
+    const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    
+    if (submitter?.classList.contains('btn-secondary')) {
+      handleAddToCart();
+    } else if (submitter?.classList.contains('btn-warning')) {
+      handleBuyNow();
+    }
+  };  
   const totalPrice = useMemo(() => {
     const pricePerUnit = service[`${selectedPrice.toLowerCase()}Price` as keyof Service] as number;
     const priceInKes = (quantity * pricePerUnit) / 1000;
@@ -82,7 +143,7 @@ export default function ServicePageClient({ service }: ServicePageClientProps) {
     className='rounded-lg'
     priority
     />
-    <div>
+    <form onSubmit={handleSubmit}>
     <h1 className="text-5xl font-bold">Service: {service.name}</h1>
     <p>{service.description}</p>
     
@@ -94,15 +155,16 @@ export default function ServicePageClient({ service }: ServicePageClientProps) {
     onChange={handlePriceChange}
     className="p-2 border rounded"
     >
-    <option value="LOW">Low: {formatPrice(service.lowPrice / 1000)}</option>
-    <option value="MEDIUM">Medium: {formatPrice(service.mediumPrice / 1000)}</option>
-    <option value="HIGH">High: {formatPrice(service.highPrice / 1000)}</option>
+    <option value="LOW">Low: {formatPrice(service.lowPrice / 10)}</option>
+    <option value="MEDIUM">Medium: {formatPrice(service.mediumPrice / 10)}</option>
+    <option value="HIGH">High: {formatPrice(service.highPrice / 10)}</option>
     </select>
     </div>
     
     <div className="my-4">
     <label htmlFor="quantityInput" className="block mb-2">Quantity ({service.minQuantity} - {service.maxQuantity}):</label>
     <input 
+    required
     id="quantityInput"
     type="number" 
     value={quantity} 
@@ -116,8 +178,9 @@ export default function ServicePageClient({ service }: ServicePageClientProps) {
     <div className="my-4">
     <label htmlFor="targetUrlInput" className="block mb-2">Target URL:</label>
     <input 
+    required
     id="targetUrlInput"
-    type="text" 
+    type="url" 
     value={targetUrl} 
     onChange={handleTargetUrlChange}
     className="p-2 border rounded w-full"
@@ -152,24 +215,37 @@ export default function ServicePageClient({ service }: ServicePageClientProps) {
     </div>
     
     <div className="my-4">
+    <label htmlFor="phoneNumberInput" className="block mb-2">Phone Number:</label>
+    <input 
+    id="phoneNumberInput"
+    type="tel" 
+    value={phoneNumber}
+    onChange={(e) => setPhoneNumber(e.target.value)}
+    className="p-2 border rounded w-full"
+    placeholder="Enter phone number"
+    required
+    />
+    </div>
+    
+    <div className="my-4">
     <p className="text-xl font-bold">Total Price: {formatPrice(totalPrice)}</p>
     </div>
     
     <div className="flex gap-4 my-4">
     <button 
+    type="submit"
     className='btn btn-secondary'
-    onClick={handleAddToCart}
     >
     Add to Cart
     </button>
     <button 
+    type="submit"
     className='btn btn-warning'
-    onClick={handleBuyNow}
     >
     Pay Now
     </button>
     </div>
-    </div>
+    </form>
     </div>
   );
 }

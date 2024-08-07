@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { createFreeTrial } from '@/app/(actions)/createFreeTrial';
 
 import {
@@ -45,31 +45,48 @@ const ServiceType = {
   OTHER: 'Other'
 };
 
-const FreeTrial = () => {
-  
-  const [formData, setFormData] = useState({
+
+type ServiceTypeKeys = keyof typeof ServiceType;
+
+interface FormData {
+  link: string;
+  serviceType: ServiceTypeKeys | '';
+  currentCount: string;
+}
+
+interface CreateFreeTrialResult {
+  success: boolean;
+  error?: string;
+  freeTrialId?: number;
+  redirect?: boolean;
+}
+
+
+const FreeTrial: React.FC = () => {
+  const [formData, setFormData] = useState<FormData>({
     link: '',
     serviceType: '',
     currentCount: '',
   });
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<boolean>(false);
   
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prevState => ({
       ...prevState,
       [name]: value
     }));
-  };
+  }, []);
   
-  const handleServiceTypeChange = (value) => {
+  const handleServiceTypeChange = useCallback((value: ServiceTypeKeys) => {
     setFormData(prevState => ({
       ...prevState,
-      serviceType: value  // Store the key (e.g., 'YOUTUBE_VIEWS')
+      serviceType: value
     }));
-  };  
-  const handleSubmit = async (event) => {
+  }, []);
+  
+  const handleSubmit = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
     setSuccess(false);
@@ -80,39 +97,38 @@ const FreeTrial = () => {
     formDataToSend.append('currentCount', formData.currentCount);
     
     try {
-      const result = await createFreeTrial(formDataToSend);
+      const result: CreateFreeTrialResult = await createFreeTrial(formDataToSend);
       if (result.success) {
         setSuccess(true);
         setFormData({ link: '', serviceType: '', currentCount: '' });
       } else {
-        setError(result.error);
+        setError(result.error || 'An unknown error occurred');
       }
     } catch (error) {
       setError('An unexpected error occurred. Please try again.');
     }
-  };
-  
+  }, [formData]);
   
   return (
     <div className="flex">
     <Dialog>
     <DialogTrigger asChild>
-    <button type="button" className="px-8 py-3 font-semibold text-white bg-green-500 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105">
+    <button type="button" className="px-8 py-3 font-semibold text-white bg-blue-500 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105 uppercase">
     Request a Free Trial
     </button>
     </DialogTrigger>
-    <DialogContent className="sm:max-w-[425px] bg-white rounded-xl shadow-2xl">
+    <DialogContent className="sm:max-w-[425px] w-full bg-white rounded-xl shadow-2xl">
     <DialogHeader>
-    <DialogTitle className="text-2xl font-bold text-gray-800">Request a Free Trial</DialogTitle>
+    <DialogTitle className="text-xl sm:text-2xl font-bold text-gray-800">Request a Free Trial</DialogTitle>
     <DialogDescription className="text-gray-600 mt-2">
     Please provide the following information to request a free trial of our services.
     <p className="mt-2 text-sm font-medium text-blue-600">
-    Note: We'll deliver 100 of any service you request, except for subscribers, where we'll deliver 20.
+    Note: We&apos;ll deliver 100 of any service you request, except for subscribers, where we&apos;ll deliver 20.
     </p>
     </DialogDescription>
     </DialogHeader>
     <form onSubmit={handleSubmit} className="mt-4">
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
     <div className="space-y-2">
     <Label htmlFor="link" className="text-sm font-medium text-gray-700">
     Link
@@ -131,8 +147,8 @@ const FreeTrial = () => {
     Service
     </Label>
     <Select 
-    onValueChange={handleServiceTypeChange}
     value={formData.serviceType}
+    onValueChange={handleServiceTypeChange}
     >
     <SelectTrigger className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
     <SelectValue placeholder="Select a service" />
@@ -173,4 +189,4 @@ const FreeTrial = () => {
   )
 }
 
-export default FreeTrial
+export default React.memo(FreeTrial);

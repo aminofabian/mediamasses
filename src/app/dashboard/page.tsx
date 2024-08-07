@@ -127,12 +127,12 @@ export default function UserDashboard() {
       <OrderDisplay orderItems={orderItems} />
     )}
     </div>
-    <h3>Free Trial</h3>
+    <h3 className='font-light'>FREE TRIAL</h3>
     <div className='border px-5 py-2'><FreeTrialCard /></div>
     <div className="my-5">
     {Object.entries(groupedServices).map(([socialAccount, services]) => (
       <div key={socialAccount} className={`p-4 rounded-lg mb-6 ${getBackgroundColor(socialAccount)}`}>
-      <h2 className="text-2xl font-bold mb-4 capitalize">{socialAccount}</h2>
+      <h2 className="text-2xl mb-4 uppercase text-center font-light">{socialAccount.replace(/_/g, ' ')}</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {services.map((service) => (
         <div key={service.id} className="border p-2 bg-white rounded-lg">

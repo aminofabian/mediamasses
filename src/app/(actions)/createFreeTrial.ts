@@ -4,8 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db/prisma'
 import { ServiceType, FreeTrialStatus } from '@prisma/client'
 import { getServerSession } from "next-auth/next"
-import { authOptions } from '../api/auth/[...nextauth]/route'
-import { redirect } from 'next/navigation'
+import { authOptions } from '../api/auth/[...nextauth]/options'
 
 export async function createFreeTrial(formData: FormData) {
   const session = await getServerSession(authOptions)
@@ -59,6 +58,7 @@ export async function createFreeTrial(formData: FormData) {
     return { success: true, freeTrialId: freeTrial.id, redirect: true }
   } catch (error) {
     console.error('Failed to create free trial:', error)
+// @ts-ignore
     if (error.code === 'P2002') {
       return { success: false, error: 'A free trial for this service and link already exists.' }
     }

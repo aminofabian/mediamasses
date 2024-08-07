@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+
 }
 
 model User {
@@ -29,7 +30,7 @@ model User {
 }
 model Account {
   id                String  @id @default(cuid())
-  userId            Int     @map("user_id")
+  userId           Int     @map("user_id")
   type              String
   provider          String
   providerAccountId String  @map("provider_account_id")
@@ -85,13 +86,18 @@ model Order {
   user          User?         @relation(fields: [userId], references: [id])
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+  phoneNumber   String
   total         Float
   status        OrderStatus  @default(PENDING)
   orderItems    OrderItem[]
   paymentMethod PaymentMethod
   currencyCode  String       @default("KES")
+  paymentInitiated    Boolean  @default(false)
+  paymentInitiatedAt  DateTime?
+
 
   @@map("orders")
+  Payment Payment[]
 }
 
 model OrderItem {
@@ -177,3 +183,27 @@ enum FreeTrialStatus {
   REJECTED
 }
 
+model Payment {
+  id                Int       @id @default(autoincrement())
+  orderId           Int
+  order             Order     @relation(fields: [orderId], references: [id])
+  amount            Float
+  currency          String    @default("KES")
+  status            PaymentStatus
+  paymentMethod     PaymentMethod
+  transactionId     String?   // KopoKopo transaction ID
+  paymentProviderId String?   // KopoKopo payment ID
+  metadata          Json?     // For storing additional KopoKopo-specific data
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
