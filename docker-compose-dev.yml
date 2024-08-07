@@ -8,21 +8,26 @@ services:
       POSTGRES_PASSWORD: cov1d$5mOvld
       POSTGRES_DB: mediamasses
       PGDATA: /var/lib/postgresql/data/pgdata/
-
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aminofabian"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   web:
     build: .
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://aminofabian:cov1d$5mOvld@db:5432/mediamasses
+      - DATABASE_URL=postgresql://aminofabian:cov1d$5mOvld@db:5432/mediamasses?schema=public
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    command: sh -c "npx prisma migrate deploy && npm start"
 
 volumes:
-  postgres_data:
-  
+  postgres_data:  
