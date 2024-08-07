@@ -9,6 +9,9 @@ COPY package*.json ./
 # Install dependencies with retry logic
 RUN npm ci --verbose || npm ci --verbose || npm ci --verbose
 
+# Copy .env file
+COPY .env ./
+
 # Copy Prisma schema
 COPY prisma ./prisma
 
@@ -37,6 +40,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/.env ./
 
 # Set environment variables
 ENV NODE_ENV production
