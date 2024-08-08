@@ -3,9 +3,9 @@ services:
   db:
     image: postgres:13
     environment:
-      POSTGRES_USER: youruser
-      POSTGRES_PASSWORD: yourpassword
-      POSTGRES_DB: yourdbname
+      POSTGRES_USER: aminofabian
+      POSTGRES_PASSWORD: cov1d$5mOvld
+      POSTGRES_DB: mediamasses
       PGDATA: /var/lib/postgresql/data/pgdata/
 
     ports:
@@ -18,7 +18,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://youruser:yourpassword@db:5432/yourdbname
+      - DATABASE_URL=postgresql://aminofabian:cov1d$5mOvld@db:5432/mediamasses
     depends_on:
       - db
 

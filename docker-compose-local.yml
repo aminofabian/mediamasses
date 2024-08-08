@@ -1,26 +1,25 @@
-version: '3.8'
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./envconfig/.env.local
+    depends_on:
+      - db
+
   db:
     image: postgres:13
     environment:
-      POSTGRES_USER: youruser
-      POSTGRES_PASSWORD: yourpassword
-      POSTGRES_DB: yourdbname
-      PGDATA: /var/lib/postgresql/data/pgdata/
-
+      POSTGRES_DB: your_db_name
+      POSTGRES_USER: your_user
+      POSTGRES_PASSWORD: your_password
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
-  web:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      - DATABASE_URL=postgresql://youruser:yourpassword@db:5432/yourdbname
-    depends_on:
-      - db
 
 volumes:
   postgres_data:

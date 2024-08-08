@@ -16,6 +16,12 @@
 # production
 /build
 
+#env
+envconfig/.env*
+envconfig/.env.local
+envconfig/.env.dev
+envconfig/.env.prod
+
 # misc
 .DS_Store
 *.pem
@@ -26,8 +32,6 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env*.local
-.env
 
 # vercel
 .vercel

@@ -1,27 +1,81 @@
 version: '3.8'
 services:
-  db:
+  postgres:
     container_name: mediamasses_app_postgres_dev
     image: postgres:13
     environment:
-      POSTGRES_USER: youruser
-      POSTGRES_PASSWORD: yourpassword
-      POSTGRES_DB: yourdbname
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
       PGDATA: /var/lib/postgresql/data/pgdata/
-
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - DATABASE_URL=${DATABASE_URL}
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://youruser:yourpassword@db:5432/yourdbname
+      DATABASE_URL: ${DATABASE_URL}
     depends_on:
-      - db
+      postgres:
+        condition: service_healthy
+    command: sh -c "npx prisma migrate deploy && npm start"
 
 volumes:
   postgres_data:
+
+
+
+# services:
+#   postgres:
+#     container_name: mediamasses_app_postgres_dev
+#     image: postgres:13
+#     env_file:
+#       - ./envconfig/.env.dev
+#     environment:
+#       POSTGRES_USER: aminofabian
+#       POSTGRES_PASSWORD: cov1d$5mOvld
+#       POSTGRES_DB: mediamasses
+#       PGDATA: /var/lib/postgresql/data/pgdata/
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U aminofabian -d mediamasses"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+
+#   web:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     ports:
+#       - "3000:3000"
+#     env_file:
+#       - ./envconfig/.env.dev
+#     environment:
+#       DATABASE_URL: postgresql://aminofabian:cov1d$5mOvld@postgres:5432/mediamasses?schema=public
+#     volumes:
+#       - ./envconfig:/app/envconfig
+#       - ./prisma:/app/prisma
+#     depends_on:
+#       postgres:
+#         condition: service_healthy
+#     command: sh -c "npx prisma migrate deploy && npm start"
+
+# volumes:
+#   postgres_data:

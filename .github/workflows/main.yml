@@ -27,6 +27,27 @@ jobs:
           sshpass -p $SERVER_PASSWORD ssh -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP "mkdir -p /var/www/$ENV_FOLDER && chown -R root:root /var/www/$ENV_FOLDER && chmod -R 755 /var/www/$ENV_FOLDER"
           sshpass -p $SERVER_PASSWORD rsync -av --rsh="ssh -o StrictHostKeyChecking=no" ./ $SERVER_USERNAME@$SERVER_IP:/var/www/$ENV_FOLDER
 
+      - name: Create .env file
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        run: |
+          ENV_FOLDER="mediamasses-$(echo $GITHUB_REF | sed 's/refs\/heads\///')"
+          sshpass -p $SERVER_PASSWORD ssh -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP << EOF
+            cd /var/www/$ENV_FOLDER
+            echo "DATABASE_URL=$DATABASE_URL" > .env
+            echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env
+            echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
+            echo "NEXTAUTH_URL=$NEXTAUTH_URL" >> .env
+            echo "NEXTAUTH_SECRET=$NEXTAUTH_SECRET" >> .env
+          EOF
+
       - name: Deploy using Docker Compose
         env:
           SERVER_IP: ${{ secrets.SERVER_IP }}
@@ -61,3 +82,73 @@ jobs:
             cd /var/www/$ENV_FOLDER
             docker compose -f $DOCKER_COMPOSE_FILE ps
           EOF
+
+
+
+
+
+
+
+# name: CI/CD Pipeline
+
+# on:
+#   push:
+#     branches:
+#       - dev
+#       - prod
+
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v2
+
+#       - name: Setup SSH and rsync
+#         run: sudo apt-get install -y sshpass
+
+#       - name: Prepare server directory and Sync files
+#         env:
+#           SERVER_IP: ${{ secrets.SERVER_IP }}
+#           SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+#           SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+#         run: |
+#           ENV_FOLDER="mediamasses-$(echo $GITHUB_REF | sed 's/refs\/heads\///')"
+#           sshpass -p $SERVER_PASSWORD ssh -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP "mkdir -p /var/www/$ENV_FOLDER && chown -R root:root /var/www/$ENV_FOLDER && chmod -R 755 /var/www/$ENV_FOLDER"
+#           sshpass -p $SERVER_PASSWORD rsync -av --rsh="ssh -o StrictHostKeyChecking=no" ./ $SERVER_USERNAME@$SERVER_IP:/var/www/$ENV_FOLDER
+
+#       - name: Deploy using Docker Compose
+#         env:
+#           SERVER_IP: ${{ secrets.SERVER_IP }}
+#           SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+#           SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+#         run: |
+#           ENV_FOLDER="mediamasses-$(echo $GITHUB_REF | sed 's/refs\/heads\///')"
+#           if [[ $GITHUB_REF == 'refs/heads/prod' ]]; then
+#             DOCKER_COMPOSE_FILE=docker-compose-prod.yml
+#           else
+#             DOCKER_COMPOSE_FILE=docker-compose-dev.yml
+#           fi
+#           sshpass -p $SERVER_PASSWORD ssh -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP << EOF
+#             cd /var/www/$ENV_FOLDER
+#             docker compose -f $DOCKER_COMPOSE_FILE down
+#             docker compose -f $DOCKER_COMPOSE_FILE up --build -d
+#           EOF
+
+#       - name: Check Container Status
+#         env:
+#           SERVER_IP: ${{ secrets.SERVER_IP }}
+#           SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+#           SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+#         run: |
+#           ENV_FOLDER="mediamasses-$(echo $GITHUB_REF | sed 's/refs\/heads\///')"
+#           if [[ $GITHUB_REF == 'refs/heads/prod' ]]; then
+#             DOCKER_COMPOSE_FILE=docker-compose-prod.yml
+#           else
+#             DOCKER_COMPOSE_FILE=docker-compose-dev.yml
+#           fi
+#           sshpass -p $SERVER_PASSWORD ssh -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP << EOF
+#             cd /var/www/$ENV_FOLDER
+#             docker compose -f $DOCKER_COMPOSE_FILE ps
+#           EOF
