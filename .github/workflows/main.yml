@@ -1,4 +1,3 @@
-
 name: CI/CD Pipeline
 
 on:
@@ -15,49 +14,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Option 1: For Docker Hub
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-
-      # Option 2: For Amazon ECR
-      # - name: Configure AWS credentials
-      #   uses: aws-actions/configure-aws-credentials@v1
-      #   with:
-      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #     aws-region: your-aws-region
-
-      # - name: Login to Amazon ECR
-      #   id: login-ecr
-      #   uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+      - name: Setup SSH and rsync
+        run: sudo apt-get install -y sshpass
 
       - name: Prepare server directory and Sync files
         env:
           SERVER_IP: ${{ secrets.SERVER_IP }}
           SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
         run: |
           ENV_FOLDER="mediamasses-$(echo $GITHUB_REF | sed 's/refs\/heads\///')"
-          ssh $SERVER_USERNAME@$SERVER_IP "mkdir -p /var/www/$ENV_FOLDER && chown -R $SERVER_USERNAME:$SERVER_USERNAME /var/www/$ENV_FOLDER && chmod -R 755 /var/www/$ENV_FOLDER"
-          rsync -avz --exclude '.git' --exclude 'node_modules' ./ $SERVER_USERNAME@$SERVER_IP:/var/www/$ENV_FOLDER
+          sshpass -p $SERVER_PASSWORD ssh -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP "mkdir -p /var/www/$ENV_FOLDER && chown -R root:root /var/www/$ENV_FOLDER && chmod -R 755 /var/www/$ENV_FOLDER"
+          sshpass -p $SERVER_PASSWORD rsync -av --rsh="ssh -o StrictHostKeyChecking=no" ./ $SERVER_USERNAME@$SERVER_IP:/var/www/$ENV_FOLDER
 
-      - name: Create .env file and Deploy using Docker Compose
+      - name: Deploy using Docker Compose
         env:
           SERVER_IP: ${{ secrets.SERVER_IP }}
           SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
         run: |
           ENV_FOLDER="mediamasses-$(echo $GITHUB_REF | sed 's/refs\/heads\///')"
           if [[ $GITHUB_REF == 'refs/heads/prod' ]]; then
@@ -65,21 +39,17 @@ jobs:
           else
             DOCKER_COMPOSE_FILE=docker-compose-dev.yml
           fi
-          ssh $SERVER_USERNAME@$SERVER_IP << EOF
+          sshpass -p $SERVER_PASSWORD ssh -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP << EOF
             cd /var/www/$ENV_FOLDER
-            echo "POSTGRES_USER=${POSTGRES_USER}" > .env
-            echo "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" >> .env
-            echo "POSTGRES_DB=${POSTGRES_DB}" >> .env
-            echo "DATABASE_URL=${DATABASE_URL}" >> .env
             docker compose -f $DOCKER_COMPOSE_FILE down
-            docker compose -f $DOCKER_COMPOSE_FILE build
-            docker compose -f $DOCKER_COMPOSE_FILE up -d
+            docker compose -f $DOCKER_COMPOSE_FILE up --build -d
           EOF
 
       - name: Check Container Status
         env:
           SERVER_IP: ${{ secrets.SERVER_IP }}
           SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
         run: |
           ENV_FOLDER="mediamasses-$(echo $GITHUB_REF | sed 's/refs\/heads\///')"
           if [[ $GITHUB_REF == 'refs/heads/prod' ]]; then
@@ -87,74 +57,7 @@ jobs:
           else
             DOCKER_COMPOSE_FILE=docker-compose-dev.yml
           fi
-          ssh $SERVER_USERNAME@$SERVER_IP << EOF
+          sshpass -p $SERVER_PASSWORD ssh -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP << EOF
             cd /var/www/$ENV_FOLDER
             docker compose -f $DOCKER_COMPOSE_FILE ps
-          EOF   
-
-          
-               
-
-# name: CI/CD Pipeline
-
-# on:
-#   push:
-#     branches:
-#       - dev
-#       - prod
-
-# jobs:
-#   deploy:
-#     runs-on: ubuntu-latest
-
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v2
-
-#       - name: Setup SSH and rsync
-#         run: sudo apt-get install -y sshpass
-
-#       - name: Prepare server directory and Sync files
-#         env:
-#           SERVER_IP: ${{ secrets.SERVER_IP }}
-#           SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
-#           SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
-#         run: |
-#           ENV_FOLDER="mediamasses-$(echo $GITHUB_REF | sed 's/refs\/heads\///')"
-#           sshpass -p $SERVER_PASSWORD ssh -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP "mkdir -p /var/www/$ENV_FOLDER && chown -R root:root /var/www/$ENV_FOLDER && chmod -R 755 /var/www/$ENV_FOLDER"
-#           sshpass -p $SERVER_PASSWORD rsync -av --rsh="ssh -o StrictHostKeyChecking=no" ./ $SERVER_USERNAME@$SERVER_IP:/var/www/$ENV_FOLDER
-
-#       - name: Deploy using Docker Compose
-#         env:
-#           SERVER_IP: ${{ secrets.SERVER_IP }}
-#           SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
-#           SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
-#         run: |
-#           ENV_FOLDER="mediamasses-$(echo $GITHUB_REF | sed 's/refs\/heads\///')"
-#           if [[ $GITHUB_REF == 'refs/heads/prod' ]]; then
-#             DOCKER_COMPOSE_FILE=docker-compose-prod.yml
-#           else
-#             DOCKER_COMPOSE_FILE=docker-compose-dev.yml
-#           fi
-#           sshpass -p $SERVER_PASSWORD ssh -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP << EOF
-#             cd /var/www/$ENV_FOLDER
-#             docker compose -f $DOCKER_COMPOSE_FILE down
-#             docker compose -f $DOCKER_COMPOSE_FILE up --build -d
-#           EOF
-
-#       - name: Check Container Status
-#         env:
-#           SERVER_IP: ${{ secrets.SERVER_IP }}
-#           SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
-#           SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
-#         run: |
-#           ENV_FOLDER="mediamasses-$(echo $GITHUB_REF | sed 's/refs\/heads\///')"
-#           if [[ $GITHUB_REF == 'refs/heads/prod' ]]; then
-#             DOCKER_COMPOSE_FILE=docker-compose-prod.yml
-#           else
-#             DOCKER_COMPOSE_FILE=docker-compose-dev.yml
-#           fi
-#           sshpass -p $SERVER_PASSWORD ssh -o StrictHostKeyChecking=no $SERVER_USERNAME@$SERVER_IP << EOF
-#             cd /var/www/$ENV_FOLDER
-#             docker compose -f $DOCKER_COMPOSE_FILE ps
-#           EOF
+          EOF
