@@ -1,8 +1,9 @@
-version: '3.8'
 services:
-  db:
+  postgres:
     container_name: mediamasses_app_postgres_dev
     image: postgres:13
+    env_file:
+      - ./envconfig/.env.dev
     environment:
       POSTGRES_USER: aminofabian
       POSTGRES_PASSWORD: cov1d$5mOvld
@@ -13,21 +14,28 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U aminofabian"]
+      test: ["CMD-SHELL", "pg_isready -U aminofabian -d mediamasses"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
+    env_file:
+      - ./envconfig/.env.dev
     environment:
-      - DATABASE_URL=postgresql://aminofabian:cov1d$5mOvld@db:5432/mediamasses?schema=public
+      DATABASE_URL: postgresql://aminofabian:cov1d$5mOvld@postgres:5432/mediamasses?schema=public
+    volumes:
+      - ./envconfig:/app/envconfig
+      - ./prisma:/app/prisma
     depends_on:
-      db:
+      postgres:
         condition: service_healthy
     command: sh -c "npx prisma migrate deploy && npm start"
 
 volumes:
-  postgres_data:  
+  postgres_data:
